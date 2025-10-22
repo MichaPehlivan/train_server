@@ -1,3 +1,5 @@
+use std::env;
+
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use surrealdb::Surreal;
@@ -22,8 +24,11 @@ async fn main() -> surrealdb::Result<()> {
 
     db.use_ns("trains").use_db("trains").await?;
 
-    db::read_gtfs("src/gtfs-nl", &db).await?;
-    println!("Database filled!");
+    let args: Vec<String> = env::args().collect();
+    if args.contains(&"--build_db".to_string()) { //Build database if flag is present
+        db::read_gtfs("src/gtfs-nl", &db).await?;
+        println!("Database filled!");
+    }
 
     let stops: Vec<Stop> = db.select("stop").await?;
     println!("Found Stops");
@@ -41,7 +46,7 @@ async fn main() -> surrealdb::Result<()> {
     println!("Found Connections");
 
     let dep_stop: Stop = db.select(("stop", "stoparea:18316")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "stoparea:524216")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "stoparea:17808")).await?.unwrap();
     let dep_time = CSTime::parse_from_str("14:00:00");
     println!("Finding earliest arrival time from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
 
