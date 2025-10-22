@@ -25,7 +25,7 @@ async fn main() -> surrealdb::Result<()> {
     db.use_ns("trains").use_db("trains").await?;
 
     let args: Vec<String> = env::args().collect();
-    if args.contains(&"--build_db".to_string()) { //Build database if flag is present
+    if args.contains(&"build_db".to_string()) { //Build database if flag is present
         db::read_gtfs("src/gtfs-nl", &db).await?;
         println!("Database filled!");
     }

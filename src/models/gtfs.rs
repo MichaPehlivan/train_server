@@ -107,7 +107,6 @@ pub struct StopTime {
 
 impl StopTime {
     pub fn new(source: &str) -> StopTime {
-        println!("{}", source);
         let parts: Vec<&str> = source.split(",").collect();
         StopTime { 
             trip_id: RecordId::from(("trip", parts[0])), 
@@ -173,7 +172,7 @@ impl Stop {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum TransferType {
     RECOMMENDED,
     TIMED,
@@ -189,7 +188,7 @@ pub struct Transfer {
     pub to_stop_id: RecordId,
     from_trip_id: RecordId,
     to_trip_id: RecordId,
-    transfer_type: TransferType
+    pub transfer_type: TransferType
 }
 
 impl Transfer {

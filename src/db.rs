@@ -2,7 +2,7 @@ use std::{collections::HashSet, fs::File, io::{BufRead, BufReader}};
 
 use surrealdb::{engine::remote::ws::Client, Error, RecordId, Surreal};
 
-use crate::models::{gtfs::{CalendarDate, Route, RouteType, Stop, StopTime, Transfer, Trip}, Connection};
+use crate::models::{gtfs::{CalendarDate, Route, RouteType, Stop, StopTime, Transfer, TransferType, Trip}, Connection};
 
 
 pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
@@ -62,7 +62,10 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
     println!("Reading Transfers");
     for line in reader.lines().skip(1) {
         let line = line.unwrap();
-        let _: Option<Transfer> = db.create("transfer").content(Transfer::new(&line)).await?;
+        let transfer = Transfer::new(&line);
+        if transfer.transfer_type != TransferType::NONE {
+            let _: Option<Transfer> = db.create("transfer").content(transfer).await?;
+        }
     }
 
     let stop_times_file = File::open(format!("{}/stop_times.txt", path)).unwrap();
