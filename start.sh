@@ -1,0 +1,1 @@
+surreal start rocksdb://./surrealDB --user root --pass secret 
