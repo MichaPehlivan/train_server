@@ -4,14 +4,14 @@ use surrealdb::RecordId;
 
 use crate::models::{gtfs::{Stop, Transfer}, CSTime, Connection};
 
-pub fn earliest_arrival(dep_stop: Stop, arr_stop: Stop, dep_time: CSTime, stops: Vec<Stop>, transfers: &Vec<Transfer>, connections: Vec<Connection>) -> Option<CSTime> {
+pub fn earliest_arrival(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, stops: &Vec<Stop>, transfers: &Vec<Transfer>, connections: &Vec<Connection>) -> Option<CSTime> {
     let mut stop_arrival_times: HashMap<RecordId, CSTime> = HashMap::new();
     let mut reachable_trips: HashSet<RecordId> = HashSet::new();
     let mut arrival_stops: HashSet<RecordId> = HashSet::new();
 
-    for stop in &stops {
+    for stop in stops {
         if stop.stop_name == dep_stop.stop_name {
-            stop_arrival_times.insert(stop.stop_id.clone(), dep_time.clone());
+            stop_arrival_times.insert(stop.stop_id.clone(), dep_time);
         }
         if stop.stop_name == arr_stop.stop_name {
             arrival_stops.insert(stop.stop_id.clone());
@@ -37,15 +37,15 @@ pub fn earliest_arrival(dep_stop: Stop, arr_stop: Stop, dep_time: CSTime, stops:
             reachable_trips.insert(connection.trip.clone());
 
             if !stop_arrival_times.contains_key(&connection.arr_stop) || (stop_arrival_times.contains_key(&connection.arr_stop) && connection.arr_time < stop_arrival_times[&connection.arr_stop]) {
-                stop_arrival_times.insert(connection.arr_stop.clone(), connection.arr_time.clone());
+                stop_arrival_times.insert(connection.arr_stop.clone(), connection.arr_time);
 
                 for transfer in transfers {
                     if transfer.from_stop_id == connection.arr_stop {
                         if stop_arrival_times.contains_key(&transfer.to_stop_id) {
-                            stop_arrival_times.insert(transfer.to_stop_id.clone(), min(stop_arrival_times[&transfer.to_stop_id].clone(), connection.arr_time.clone()));
+                            stop_arrival_times.insert(transfer.to_stop_id.clone(), min(stop_arrival_times[&transfer.to_stop_id], connection.arr_time));
                         }
                         else {
-                            stop_arrival_times.insert(transfer.to_stop_id.clone(), connection.arr_time.clone());
+                            stop_arrival_times.insert(transfer.to_stop_id.clone(), connection.arr_time);
                         }
                     }
                 }

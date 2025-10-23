@@ -7,7 +7,7 @@ use crate::models::gtfs::{StopTime, Trip};
 
 pub mod gtfs;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CSTime {
     hours: usize,
     minutes: usize,

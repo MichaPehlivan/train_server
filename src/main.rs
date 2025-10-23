@@ -50,7 +50,7 @@ async fn main() -> surrealdb::Result<()> {
     let dep_time = CSTime::parse_from_str("14:00:00");
     println!("Finding earliest arrival time from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
 
-    let arrival = earliest_arrival(dep_stop, arr_stop, dep_time, stops, &transfers, connections);
+    let arrival = earliest_arrival(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);
     match arrival {
         Some(time) => println!("Earliest arrival: {}", time),
         None => println!("No route found :("),
