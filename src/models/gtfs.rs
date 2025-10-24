@@ -133,7 +133,7 @@ pub struct Stop {
     pub stop_name: String,
     location_type: Option<LocationType>,
     parent_station: String,
-    platform_code: String
+    pub platform_code: String
 }
 
 impl Stop {
