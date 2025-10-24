@@ -49,7 +49,7 @@ async fn main() -> surrealdb::Result<()> {
 
     let dep_stop: Stop = db.select(("stop", "stoparea:18316")).await?.unwrap();
     let arr_stop: Stop = db.select(("stop", "stoparea:17808")).await?.unwrap();
-    let dep_time = CSTime::parse_from_str("14:00:00");
+    let dep_time = CSTime::parse_from_str("23:00:00");
     println!("Finding earliest arrival time from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
 
     let arrival = earliest_arrival(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);

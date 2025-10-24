@@ -27,7 +27,7 @@ impl CSTime {
 
 impl Display for CSTime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:02}:{:02}:{:02}", self.hours, self.minutes, self.seconds)
+        write!(f, "{:02}:{:02}:{:02}", self.hours % 24, self.minutes, self.seconds)
     }
 }
 
