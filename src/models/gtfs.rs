@@ -184,32 +184,8 @@ pub enum TransferType {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Transfer {
-    pub from_stop_id: RecordId,
-    pub to_stop_id: RecordId,
-    from_trip_id: RecordId,
-    to_trip_id: RecordId,
-    pub transfer_type: TransferType
-}
-
-impl Transfer {
-    pub fn new(source: &str) -> Transfer {
-        let parts: Vec<&str> = source.split(",").collect();
-        Transfer { 
-            from_stop_id: RecordId::from(("stop", parts[0])), 
-            to_stop_id: RecordId::from(("stop", parts[1])), 
-            from_trip_id: RecordId::from(("trip", parts[4])), 
-            to_trip_id: RecordId::from(("trip", parts[5])), 
-            transfer_type: match parts[6] {
-                "0" => TransferType::RECOMMENDED,
-                "1" => TransferType::TIMED,
-                "2" => TransferType::MINIMUMTIME,
-                "3" => TransferType::NONE,
-                "4" => TransferType::INSEAT,
-                "5" => TransferType::REBOARD,
-                _=> panic!("Invalid transfer_type!")
-            } 
-        }
-    }
+    pub from_stop: RecordId,
+    pub to_stops: Vec<RecordId>
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

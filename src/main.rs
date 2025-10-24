@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use std::env;
 
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
-use surrealdb::Surreal;
+use surrealdb::{RecordId, Surreal};
 
 use crate::connection_scan::earliest_arrival;
 use crate::models::gtfs::{Stop, Transfer};
@@ -32,7 +33,8 @@ async fn main() -> surrealdb::Result<()> {
 
     let stops: Vec<Stop> = db.select("stop").await?;
     println!("Found Stops");
-    let transfers: Vec<Transfer> = db.select("transfer").await?;
+    let transfer_vec: Vec<Transfer> = db.select("transfer").await?;
+    let transfers: HashMap<RecordId, Vec<RecordId>> = transfer_vec.iter().map(|t| (t.from_stop.clone(), t.to_stops.clone())).collect();
     println!("Found Transfers");
     let mut connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours < 10 ORDER BY dep_time;").await?.take(0).unwrap();
     let mut noon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 10 AND dep_time.hours < 14 ORDER BY dep_time;").await?.take(0).unwrap();

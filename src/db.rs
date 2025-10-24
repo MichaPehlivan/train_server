@@ -32,11 +32,13 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
 
     let stops_file = File::open(format!("{}/stops.txt", path)).unwrap();
     let reader = BufReader::new(stops_file);
+    let mut stops = vec![];
 
     println!("Reading Stops");
     for line in reader.lines().skip(1) {
         let line = line.unwrap();
         let stop = Stop::new(&line);
+        stops.push(stop.stop_id.clone());
         let _: Option<Stop> = db.create(stop.stop_id.clone()).content(stop).await?;
     }
 
@@ -58,14 +60,33 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
 
     let transfers_file = File::open(format!("{}/transfers.txt", path)).unwrap();
     let reader = BufReader::new(transfers_file);
+    let mut transfers: HashSet<(RecordId, RecordId)> = HashSet::new();
 
     println!("Reading Transfers");
     for line in reader.lines().skip(1) {
         let line = line.unwrap();
-        let transfer = Transfer::new(&line);
-        if transfer.transfer_type != TransferType::NONE {
-            let _: Option<Transfer> = db.create("transfer").content(transfer).await?;
+        let parts: Vec<&str> = line.split(",").collect();
+        let transfer_type = match parts[6] {
+            "0" => TransferType::RECOMMENDED,
+            "1" => TransferType::TIMED,
+            "2" => TransferType::MINIMUMTIME,
+            "3" => TransferType::NONE,
+            "4" => TransferType::INSEAT,
+            "5" => TransferType::REBOARD,
+            _=> panic!("Invalid transfer_type!")
+        };
+        if transfer_type != TransferType::NONE {
+            transfers.insert((RecordId::from(("stop", parts[0])), RecordId::from(("stop", parts[1]))));
         }
+    }
+    for stop in stops {
+        let transfer_stops: Vec<RecordId> = transfers.iter().filter(|t| t.0 == stop).map(|t| t.1.clone()).collect();
+        let _: Option<Transfer> = db.create("transfer").content(
+            Transfer {
+                from_stop: stop,
+                to_stops: transfer_stops,
+            }
+        ).await?;
     }
 
     let stop_times_file = File::open(format!("{}/stop_times.txt", path)).unwrap();
