@@ -118,7 +118,7 @@ impl StopTime {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum LocationType {
     STOP,
     STATION,
@@ -127,11 +127,11 @@ pub enum LocationType {
     BOARDINGAREA
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Stop {
     pub stop_id: RecordId,
     pub stop_name: String,
-    location_type: Option<LocationType>,
+    pub location_type: Option<LocationType>,
     parent_station: String,
     pub platform_code: String
 }

@@ -5,7 +5,7 @@ use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use surrealdb::{RecordId, Surreal};
 
-use crate::connection_scan::{earliest_arrival, JourneyLeg};
+use crate::connection_scan::{earliest_arrival, find_journey, print_journey};
 use crate::models::gtfs::{Stop, Transfer};
 use crate::models::{CSTime, Connection};
 
@@ -47,19 +47,23 @@ async fn main() -> surrealdb::Result<()> {
     connections.append(&mut night_connections);
     println!("Found Connections");
 
-    let dep_stop: Stop = db.select(("stop", "stoparea:17820")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "stoparea:18316")).await?.unwrap();
+    let dep_stop: Stop = db.select(("stop", "3065387")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "2992891")).await?.unwrap();
     let dep_time = CSTime::parse_from_str("12:00:00");
     println!("Finding earliest arrival time from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
 
-    let journey = earliest_arrival(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);
-    match journey {
-        Some((journey_legs, time)) => {
-            JourneyLeg::print_journey(journey_legs, &db).await?;
-            println!("Arrival at {}", time);
-        },
+    let arrival = earliest_arrival(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);
+    match arrival {
+        Some(time) => println!("Earliest arrival: {}", time),
         None => println!("No route found :("),
     }
+
+    let dep_stop: Stop = db.select(("stop", "3065387")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "2992891")).await?.unwrap();
+    let dep_time = CSTime::parse_from_str("12:00:00");
+    println!("Finding journey from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
+    let journey = find_journey(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);
+    print_journey(journey, &db).await?;
 
     Ok(())
 }
