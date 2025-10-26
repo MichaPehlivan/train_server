@@ -39,7 +39,23 @@ async fn main() -> surrealdb::Result<()> {
     let stops: Vec<Stop> = db.select("stop").await?;
     println!("Found Stops");
     let transfer_vec: Vec<Transfer> = db.select("transfer").await?;
-    let transfers: HashMap<RecordId, Vec<RecordId>> = transfer_vec.iter().map(|t| (t.from_stop.clone(), t.to_stops.clone())).collect();
+    let mut transfers: HashMap<RecordId, Vec<RecordId>> = transfer_vec.iter().map(|t| (t.from_stop.clone(), t.to_stops.clone())).collect();
+    for stop in &stops {
+        if stop.location_type == Some(models::gtfs::LocationType::STATION) {
+            let substops: Vec<Stop> = stops.iter().filter(|s| s.stop_name == stop.stop_name && s.stop_id != stop.stop_id).cloned().collect();
+            transfers.insert(stop.stop_id.clone(), substops.iter().map(|s| s.stop_id.clone()).collect());
+
+            for substop in substops {
+                if transfers.contains_key(&substop.stop_id) {
+                    let to_stops = transfers.get_mut(&substop.stop_id).unwrap();
+                    to_stops.push(stop.stop_id.clone());
+                }
+                else {
+                    transfers.insert(substop.stop_id, vec![stop.stop_id.clone()]);
+                }
+            }
+        }
+    }
     println!("Found Transfers");
     let mut connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours < 9;").await?.take(0).unwrap();
     let mut noon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 9 AND dep_time.hours < 12;").await?.take(0).unwrap();
@@ -56,8 +72,8 @@ async fn main() -> surrealdb::Result<()> {
     connections.sort_by(|a, b| a.dep_time.cmp(&b.dep_time));
     println!("Found Connections");
 
-    let dep_stop: Stop = db.select(("stop", "2993012")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "2993126")).await?.unwrap();
+    let dep_stop: Stop = db.select(("stop", "stoparea:17820")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "stoparea:18316")).await?.unwrap();
     let dep_time = CSTime::parse_from_str("12:00:00");
     println!("Finding earliest arrival time from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
 
@@ -67,11 +83,8 @@ async fn main() -> surrealdb::Result<()> {
         None => println!("No route found :("),
     }
 
-    let dep_stop: Stop = db.select(("stop", "2993012")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "2993126")).await?.unwrap();
-    let dep_time = CSTime::parse_from_str("12:00:00");
     println!("Finding journey from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
-    let journey = find_journey(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);
+    let journey = find_journey(&dep_stop, &arr_stop, dep_time, &transfers, &connections);
     print_journey(journey, &db).await?;
 
     Ok(())

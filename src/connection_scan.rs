@@ -54,26 +54,19 @@ pub fn earliest_arrival(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, stop
     None
 }
 
-pub fn find_journey(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, stops: &Vec<Stop>, transfers: &HashMap<RecordId, Vec<RecordId>>, connections: &Vec<Connection>) -> Vec<(Connection, Connection, (RecordId, RecordId))> {
+pub fn find_journey(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, transfers: &HashMap<RecordId, Vec<RecordId>>, connections: &Vec<Connection>) -> Vec<(Connection, Connection, (RecordId, RecordId))> {
     let mut stop_arrival_times: HashMap<RecordId, CSTime> = HashMap::new();
     let mut trip_enter_connections: HashMap<RecordId, Connection> = HashMap::new();
     let mut stop_journeys: HashMap<RecordId, (Connection, Connection, (RecordId, RecordId))> = HashMap::new();
 
-    for stop in stops {
-        if stop.stop_name == dep_stop.stop_name {
-            stop_arrival_times.insert(stop.stop_id.clone(), dep_time);
-        }
+    for stop in &transfers[&dep_stop.stop_id] {
+        stop_arrival_times.insert(stop.clone(), dep_time);
     }
 
     for connection in connections {
         if trip_enter_connections.contains_key(&connection.trip) || (stop_arrival_times.contains_key(&connection.dep_stop) && stop_arrival_times[&connection.dep_stop] <= connection.dep_time) {
             if !trip_enter_connections.contains_key(&connection.trip) {
                 trip_enter_connections.insert(connection.trip.clone(), connection.clone());
-            }
-
-            if !stop_arrival_times.contains_key(&connection.arr_stop) || (stop_arrival_times.contains_key(&connection.arr_stop) && connection.arr_time < stop_arrival_times[&connection.arr_stop]) {
-                stop_arrival_times.insert(connection.arr_stop.clone(), connection.arr_time);
-                stop_journeys.insert(connection.arr_stop.clone(), (trip_enter_connections[&connection.trip].clone(), connection.clone(), (connection.arr_stop.clone(), connection.arr_stop.clone())));
             }
 
             for transfer_stop in &transfers[&connection.arr_stop] {
