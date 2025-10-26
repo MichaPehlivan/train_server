@@ -41,18 +41,19 @@ async fn main() -> surrealdb::Result<()> {
     let transfer_vec: Vec<Transfer> = db.select("transfer").await?;
     let transfers: HashMap<RecordId, Vec<RecordId>> = transfer_vec.iter().map(|t| (t.from_stop.clone(), t.to_stops.clone())).collect();
     println!("Found Transfers");
-    let mut connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours < 9 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut noon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 9 AND dep_time.hours < 12 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut afternoon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 12 AND dep_time.hours < 15 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut evening_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 15 AND dep_time.hours < 18 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut night_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 18 AND dep_time.hours < 21 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut deepnight_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 21 ORDER BY dep_time;").await?.take(0).unwrap();
+    let mut connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours < 9;").await?.take(0).unwrap();
+    let mut noon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 9 AND dep_time.hours < 12;").await?.take(0).unwrap();
+    let mut afternoon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 12 AND dep_time.hours < 15;").await?.take(0).unwrap();
+    let mut evening_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 15 AND dep_time.hours < 18;").await?.take(0).unwrap();
+    let mut night_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 18 AND dep_time.hours < 21;").await?.take(0).unwrap();
+    let mut deepnight_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 21;").await?.take(0).unwrap();
     connections.append(&mut noon_connections);
     connections.append(&mut afternoon_connections);
     connections.append(&mut evening_connections);
     connections.append(&mut night_connections);
     connections.append(&mut deepnight_connections);
     connections = connections.iter().filter(|c| active_services.contains(&c.service)).cloned().collect();
+    connections.sort_by(|a, b| a.dep_time.cmp(&b.dep_time));
     println!("Found Connections");
 
     let dep_stop: Stop = db.select(("stop", "2993012")).await?.unwrap();
