@@ -97,7 +97,6 @@ pub fn find_journey(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, stops: &
 }
 
 pub async fn print_journey(journey: Vec<(Connection, Connection, (RecordId, RecordId))>, db: &Surreal<Client>) -> Result<(), Error> {
-    println!("first connection: {:?}", journey[0].1);
     for journey_leg in journey {
         let enter_connection = journey_leg.0;
         let exit_connection = journey_leg.1;
@@ -106,7 +105,7 @@ pub async fn print_journey(journey: Vec<(Connection, Connection, (RecordId, Reco
         let arr_stop: Stop = db.select(exit_connection.arr_stop).await?.unwrap();
         let footpath_begin: Stop = db.select(footpath.0).await?.unwrap();
         let footpath_end: Stop = db.select(footpath.1).await?.unwrap();
-        println!("{} spoor {}, {} spoor {}, ({} spoor {}, {} spoor {})", dep_stop.stop_name, dep_stop.platform_code, arr_stop.stop_name, arr_stop.platform_code, footpath_begin.stop_name, footpath_begin.platform_code, footpath_end.stop_name, footpath_end.platform_code);
+        println!("{} spoor {} ({}), {} spoor {} ({}), ({} spoor {}, {} spoor {})", dep_stop.stop_name, dep_stop.platform_code, enter_connection.dep_time, arr_stop.stop_name, arr_stop.platform_code, exit_connection.arr_time, footpath_begin.stop_name, footpath_begin.platform_code, footpath_end.stop_name, footpath_end.platform_code);
         println!("");
     }
 

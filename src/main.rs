@@ -47,8 +47,8 @@ async fn main() -> surrealdb::Result<()> {
     connections.append(&mut night_connections);
     println!("Found Connections");
 
-    let dep_stop: Stop = db.select(("stop", "3065387")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "2992891")).await?.unwrap();
+    let dep_stop: Stop = db.select(("stop", "2992280")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "2992579")).await?.unwrap();
     let dep_time = CSTime::parse_from_str("12:00:00");
     println!("Finding earliest arrival time from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
 
@@ -58,8 +58,8 @@ async fn main() -> surrealdb::Result<()> {
         None => println!("No route found :("),
     }
 
-    let dep_stop: Stop = db.select(("stop", "3065387")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "2992891")).await?.unwrap();
+    let dep_stop: Stop = db.select(("stop", "2992280")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "2992579")).await?.unwrap();
     let dep_time = CSTime::parse_from_str("12:00:00");
     println!("Finding journey from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
     let journey = find_journey(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);
