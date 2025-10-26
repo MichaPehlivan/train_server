@@ -21,10 +21,6 @@ pub fn earliest_arrival(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, stop
     let first_connection = connections.binary_search_by(|x| x.dep_time.cmp(&dep_time)).unwrap();
 
     for connection in &connections[first_connection..] {
-        
-        /*if stop_arrival_times.contains_key(&arr_stop.stop_id) && stop_arrival_times[&arr_stop.stop_id] <= connection.dep_time {
-            return Some(stop_arrival_times[&arr_stop.stop_id].clone());
-        }*/
 
         if arrival_stops.iter().any(|stop| stop_arrival_times.contains_key(stop)) {
             let arrival_times: Vec<CSTime> = arrival_stops.iter().filter_map(|stop| stop_arrival_times.get(stop)).cloned().collect();
@@ -62,8 +58,15 @@ pub fn find_journey(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, transfer
     for stop in &transfers[&dep_stop.stop_id] {
         stop_arrival_times.insert(stop.clone(), dep_time);
     }
+    
+    let first_connection = connections.binary_search_by(|x| x.dep_time.cmp(&dep_time)).unwrap();
 
-    for connection in connections {
+    for connection in &connections[first_connection..] {
+
+        if stop_arrival_times.contains_key(&arr_stop.stop_id) && stop_arrival_times[&arr_stop.stop_id] <= connection.dep_time {
+            break;
+        }
+
         if trip_enter_connections.contains_key(&connection.trip) || (stop_arrival_times.contains_key(&connection.dep_stop) && stop_arrival_times[&connection.dep_stop] <= connection.dep_time) {
             if !trip_enter_connections.contains_key(&connection.trip) {
                 trip_enter_connections.insert(connection.trip.clone(), connection.clone());
