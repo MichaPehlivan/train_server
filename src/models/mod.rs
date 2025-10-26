@@ -37,7 +37,8 @@ pub struct Connection {
     pub arr_stop: RecordId,
     pub dep_time: CSTime,
     pub arr_time: CSTime,
-    pub trip: RecordId
+    pub trip: RecordId,
+    pub service: String
 }
 
 impl Connection {
@@ -47,12 +48,14 @@ impl Connection {
             times.sort_by(|a, b| a.stop_sequence.cmp(&b.stop_sequence));
             
             for pair in times.windows(2) {
+                let trip: Trip = db.select(pair[0].trip_id.clone()).await?.unwrap();
                 let _: Vec<Connection> = db.insert("connection").content(Connection {
                         dep_stop: pair[0].stop_id.clone(),
                         arr_stop: pair[1].stop_id.clone(),
                         dep_time: pair[0].departure_time.clone(),
                         arr_time: pair[1].arrival_time.clone(),
-                        trip: pair[0].trip_id.clone(),
+                        trip: trip.trip_id,
+                        service: trip.service_id
                     }).await?;
             }
             print!("Build Connections for {}% of Trips\r", (index*100)/trips.len());

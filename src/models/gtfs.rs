@@ -12,7 +12,7 @@ pub enum ExceptionType {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CalendarDate {
-    service_id: String,
+    pub service_id: String,
     date: NaiveDate,
     excpetion_type: ExceptionType
 }
@@ -191,7 +191,7 @@ pub struct Transfer {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Trip {
     pub route_id: RecordId,
-    service_id: String,
+    pub service_id: String,
     pub trip_id: RecordId,
     trip_headsign: String,
     trip_short_name: String,

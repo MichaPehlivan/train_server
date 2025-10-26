@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 
+use chrono::Local;
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use surrealdb::{RecordId, Surreal};
 
 use crate::connection_scan::{earliest_arrival, find_journey, print_journey};
-use crate::models::gtfs::{Stop, Transfer};
+use crate::models::gtfs::{CalendarDate, Stop, Transfer};
 use crate::models::{CSTime, Connection};
 
 mod models;
@@ -31,24 +32,31 @@ async fn main() -> surrealdb::Result<()> {
         println!("Database filled!");
     }
 
+    let today = Local::now().date_naive();
+    let calendar_dates: Vec<CalendarDate> = db.query("SELECT * FROM calendar_date WHERE date = $today;").bind(("today", today)).await?.take(0).unwrap();
+    let active_services: HashSet<String> = calendar_dates.iter().map(|c| c.service_id.clone()).collect();
+    println!("Found active Services");
     let stops: Vec<Stop> = db.select("stop").await?;
     println!("Found Stops");
     let transfer_vec: Vec<Transfer> = db.select("transfer").await?;
     let transfers: HashMap<RecordId, Vec<RecordId>> = transfer_vec.iter().map(|t| (t.from_stop.clone(), t.to_stops.clone())).collect();
     println!("Found Transfers");
-    let mut connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours < 10 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut noon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 10 AND dep_time.hours < 14 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut afternoon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 14 AND dep_time.hours < 18 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut evening_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 18 AND dep_time.hours < 22 ORDER BY dep_time;").await?.take(0).unwrap();
-    let mut night_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 22 ORDER BY dep_time;").await?.take(0).unwrap();
+    let mut connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours < 9 ORDER BY dep_time;").await?.take(0).unwrap();
+    let mut noon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 9 AND dep_time.hours < 12 ORDER BY dep_time;").await?.take(0).unwrap();
+    let mut afternoon_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 12 AND dep_time.hours < 15 ORDER BY dep_time;").await?.take(0).unwrap();
+    let mut evening_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 15 AND dep_time.hours < 18 ORDER BY dep_time;").await?.take(0).unwrap();
+    let mut night_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 18 AND dep_time.hours < 21 ORDER BY dep_time;").await?.take(0).unwrap();
+    let mut deepnight_connections: Vec<Connection> = db.query("SELECT * FROM connection WHERE dep_time.hours >= 21 ORDER BY dep_time;").await?.take(0).unwrap();
     connections.append(&mut noon_connections);
     connections.append(&mut afternoon_connections);
     connections.append(&mut evening_connections);
     connections.append(&mut night_connections);
+    connections.append(&mut deepnight_connections);
+    connections = connections.iter().filter(|c| active_services.contains(&c.service)).cloned().collect();
     println!("Found Connections");
 
-    let dep_stop: Stop = db.select(("stop", "2992280")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "2992579")).await?.unwrap();
+    let dep_stop: Stop = db.select(("stop", "2993012")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "2993126")).await?.unwrap();
     let dep_time = CSTime::parse_from_str("12:00:00");
     println!("Finding earliest arrival time from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
 
@@ -58,8 +66,8 @@ async fn main() -> surrealdb::Result<()> {
         None => println!("No route found :("),
     }
 
-    let dep_stop: Stop = db.select(("stop", "2992280")).await?.unwrap();
-    let arr_stop: Stop = db.select(("stop", "2992579")).await?.unwrap();
+    let dep_stop: Stop = db.select(("stop", "2993012")).await?.unwrap();
+    let arr_stop: Stop = db.select(("stop", "2993126")).await?.unwrap();
     let dep_time = CSTime::parse_from_str("12:00:00");
     println!("Finding journey from {} to {} at {}", dep_stop.stop_name, arr_stop.stop_name, dep_time);
     let journey = find_journey(&dep_stop, &arr_stop, dep_time, &stops, &transfers, &connections);
