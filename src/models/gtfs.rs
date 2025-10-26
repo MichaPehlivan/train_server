@@ -131,7 +131,7 @@ pub enum LocationType {
 pub struct Stop {
     pub stop_id: RecordId,
     pub stop_name: String,
-    pub location_type: Option<LocationType>,
+    pub location_type: LocationType,
     parent_station: String,
     pub platform_code: String
 }
@@ -159,11 +159,11 @@ impl Stop {
             stop_id: RecordId::from(("stop", parts[0])), 
             stop_name: parts[2].to_string(), 
             location_type: match parts[5] {
-                "0" => Some(LocationType::STOP),
-                "1" => Some(LocationType::STATION),
-                "2" => Some(LocationType::ENTRANCE),
-                "3" => Some(LocationType::GENERIC),
-                "4" => Some(LocationType::BOARDINGAREA),
+                "0" => LocationType::STOP,
+                "1" => LocationType::STATION,
+                "2" => LocationType::ENTRANCE,
+                "3" => LocationType::GENERIC,
+                "4" => LocationType::BOARDINGAREA,
                 _=> panic!("Invalid location_type!")
             }, 
             parent_station: parts[6].to_string(),

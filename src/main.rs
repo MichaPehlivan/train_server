@@ -41,7 +41,7 @@ async fn main() -> surrealdb::Result<()> {
     let transfer_vec: Vec<Transfer> = db.select("transfer").await?;
     let mut transfers: HashMap<RecordId, Vec<RecordId>> = transfer_vec.iter().map(|t| (t.from_stop.clone(), t.to_stops.clone())).collect();
     for stop in &stops {
-        if stop.location_type == Some(models::gtfs::LocationType::STATION) {
+        if stop.location_type == models::gtfs::LocationType::STATION {
             let substops: Vec<Stop> = stops.iter().filter(|s| s.stop_name == stop.stop_name && s.stop_id != stop.stop_id).cloned().collect();
             transfers.insert(stop.stop_id.clone(), substops.iter().map(|s| s.stop_id.clone()).collect());
 
