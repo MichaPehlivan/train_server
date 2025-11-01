@@ -18,7 +18,7 @@ pub struct CalendarDate {
 }
 
 impl CalendarDate {
-    pub fn new(source: &str) -> CalendarDate {
+    pub fn new(source: String) -> CalendarDate {
         let parts: Vec<&str> = source.split(",").collect();
         CalendarDate { 
             service_id: parts[0].to_string(), 
@@ -48,7 +48,7 @@ pub enum RouteType {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Route {
-    pub route_id: RecordId,
+    pub id: RecordId,
     agency_id: String,
     route_short_name: String,
     route_long_name: String,
@@ -56,7 +56,7 @@ pub struct Route {
 }
 
 impl Route {
-    pub fn new(source: &str) -> Route {
+    pub fn new(source: String) -> Route {
         let mut parts = Vec::new();
         let mut start = 0;
         let mut in_quotes = false;
@@ -75,7 +75,7 @@ impl Route {
         parts.push(source[start..].trim());
 
         Route { 
-            route_id: RecordId::from(("route", parts[0])), 
+            id: RecordId::from(("route", parts[0])), 
             agency_id: parts[1].to_string(), 
             route_short_name: parts[2].to_string(), 
             route_long_name: parts[3].to_string(), 
@@ -129,7 +129,7 @@ pub enum LocationType {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Stop {
-    pub stop_id: RecordId,
+    pub id: RecordId,
     pub stop_name: String,
     pub location_type: LocationType,
     parent_station: String,
@@ -137,7 +137,7 @@ pub struct Stop {
 }
 
 impl Stop {
-    pub fn new(source: &str) -> Stop {
+    pub fn new(source: String) -> Stop {
         let mut parts = Vec::new();
         let mut start = 0;
         let mut in_quotes = false;
@@ -156,7 +156,7 @@ impl Stop {
         parts.push(source[start..].trim());
 
         Stop { 
-            stop_id: RecordId::from(("stop", parts[0])), 
+            id: RecordId::from(("stop", parts[0])), 
             stop_name: parts[2].to_string(), 
             location_type: match parts[5] {
                 "0" => LocationType::STOP,
@@ -190,21 +190,21 @@ pub struct Transfer {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Trip {
+    pub id: RecordId,
     pub route_id: RecordId,
     pub service_id: String,
-    pub trip_id: RecordId,
     trip_headsign: String,
     trip_short_name: String,
     trip_long_name: String
 }
 
 impl Trip {
-    pub fn new(source: &str) -> Trip {
+    pub fn new(source: String) -> Trip {
         let parts: Vec<&str> = source.split(",").collect();
         Trip { 
+            id: RecordId::from(("trip", parts[2])), 
             route_id: RecordId::from(("route", parts[0])), 
             service_id: parts[1].to_string(), 
-            trip_id: RecordId::from(("trip", parts[2])), 
             trip_headsign: parts[4].to_string(), 
             trip_short_name: parts[5].to_string(), 
             trip_long_name: parts[6].to_string() 

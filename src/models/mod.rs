@@ -44,7 +44,7 @@ pub struct Connection {
 impl Connection {
     pub async fn build_connections(db: &Surreal<Client>, trips: Vec<Trip>, stop_times: Vec<StopTime>) -> Result<(), Error> {
         for (index, trip) in trips.iter().enumerate() {
-            let mut times: Vec<&StopTime> = stop_times.iter().filter(|x| x.trip_id == trip.trip_id).collect();
+            let mut times: Vec<&StopTime> = stop_times.iter().filter(|x| x.trip_id == trip.id).collect();
             times.sort_by(|a, b| a.stop_sequence.cmp(&b.stop_sequence));
             
             for pair in times.windows(2) {
@@ -54,7 +54,7 @@ impl Connection {
                         arr_stop: pair[1].stop_id.clone(),
                         dep_time: pair[0].departure_time.clone(),
                         arr_time: pair[1].arrival_time.clone(),
-                        trip: trip.trip_id,
+                        trip: trip.id,
                         service: trip.service_id
                     }).await?;
             }

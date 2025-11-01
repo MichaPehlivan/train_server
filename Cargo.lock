@@ -3794,6 +3794,7 @@ name = "train_server"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "futures",
  "serde",
  "surrealdb",
  "tokio",

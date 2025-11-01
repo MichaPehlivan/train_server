@@ -9,7 +9,7 @@ pub fn find_journey(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, transfer
     let mut trip_enter_connections: HashMap<RecordId, Connection> = HashMap::new();
     let mut stop_journeys: HashMap<RecordId, (Connection, Connection, (RecordId, RecordId))> = HashMap::new();
 
-    for stop in &transfers[&dep_stop.stop_id] {
+    for stop in &transfers[&dep_stop.id] {
         stop_arrival_times.insert(stop.clone(), dep_time);
     }
     
@@ -17,7 +17,7 @@ pub fn find_journey(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, transfer
 
     for connection in &connections[first_connection..] {
 
-        if stop_arrival_times.contains_key(&arr_stop.stop_id) && stop_arrival_times[&arr_stop.stop_id] <= connection.dep_time {
+        if stop_arrival_times.contains_key(&arr_stop.id) && stop_arrival_times[&arr_stop.id] <= connection.dep_time {
             break;
         }
 
@@ -26,17 +26,19 @@ pub fn find_journey(dep_stop: &Stop, arr_stop: &Stop, dep_time: CSTime, transfer
                 trip_enter_connections.insert(connection.trip.clone(), connection.clone());
             }
 
-            for transfer_stop in &transfers[&connection.arr_stop] {
-                if !stop_arrival_times.contains_key(transfer_stop) || (stop_arrival_times.contains_key(transfer_stop) && connection.arr_time < stop_arrival_times[&transfer_stop]) {
-                    stop_arrival_times.insert(transfer_stop.clone(), connection.arr_time);
-                    stop_journeys.insert(transfer_stop.clone(), (trip_enter_connections[&connection.trip].clone(), connection.clone(), (connection.arr_stop.clone(), transfer_stop.clone())));
+            if transfers.contains_key(&connection.arr_stop) {
+                for transfer_stop in &transfers[&connection.arr_stop] {
+                    if !stop_arrival_times.contains_key(transfer_stop) || (stop_arrival_times.contains_key(transfer_stop) && connection.arr_time < stop_arrival_times[&transfer_stop]) {
+                        stop_arrival_times.insert(transfer_stop.clone(), connection.arr_time);
+                        stop_journeys.insert(transfer_stop.clone(), (trip_enter_connections[&connection.trip].clone(), connection.clone(), (connection.arr_stop.clone(), transfer_stop.clone())));
+                    }
                 }
             }
         }
     }
 
     let mut journey = vec![];
-    let mut t = arr_stop.stop_id.clone();
+    let mut t = arr_stop.id.clone();
     while stop_journeys.contains_key(&t) {
         let journey_leg = stop_journeys[&t].clone();
         journey.push(journey_leg.clone());
