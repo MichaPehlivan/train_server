@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 
 use csv::{ReaderBuilder, StringRecord};
 use futures::{StreamExt, stream};
-use rayon::prelude::*;
 use surrealdb::{engine::remote::ws::Client, Error, RecordId, Surreal};
 
 use crate::models::{gtfs::{CalendarDate, Route, RouteType, Stop, StopTime, Transfer, TransferType, Trip}, Connection};
@@ -29,30 +28,30 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
 
     println!("Reading CalendarDates");
     let mut reader = ReaderBuilder::new().has_headers(true).from_path(format!("{}/calendar_dates.txt", path)).unwrap();
-    let calendar_dates: Vec<CalendarDate> = reader.records().par_bridge().filter_map(|l| l.ok().map(CalendarDate::new)).collect();
+    let calendar_dates: Vec<CalendarDate> = reader.records().filter_map(|l| l.ok().map(CalendarDate::new)).collect();
     let _: Vec<CalendarDate> = db.insert("calendar_date").content(calendar_dates).await?;
 
     println!("Reading Routes");
     let mut reader = ReaderBuilder::new().has_headers(true).from_path(format!("{}/routes.txt", path)).unwrap();
-    let routes: Vec<Route> = reader.records().par_bridge().filter_map(|l| l.ok().map(Route::new)).collect();
-    let known_rail_routes: HashSet<RecordId> = routes.iter().par_bridge().filter(|r| r.route_type == RouteType::RAIL).map(|r| r.id.clone()).collect();
+    let routes: Vec<Route> = reader.records().filter_map(|l| l.ok().map(Route::new)).collect();
+    let known_rail_routes: HashSet<RecordId> = routes.iter().filter(|r| r.route_type == RouteType::RAIL).map(|r| r.id.clone()).collect();
     let _: Vec<Route> = db.insert("route").content(routes).await?;
 
     println!("Reading Stops");
     let mut reader = ReaderBuilder::new().has_headers(true).from_path(format!("{}/stops.txt", path)).unwrap();
-    let stops_data: Vec<Stop> = reader.records().par_bridge().filter_map(|l| l.ok().map(Stop::new)).collect();
-    let stops: Vec<RecordId> = stops_data.iter().par_bridge().map(|s| s.id.clone()).collect();
+    let stops_data: Vec<Stop> = reader.records().filter_map(|l| l.ok().map(Stop::new)).collect();
+    let stops: Vec<RecordId> = stops_data.iter().map(|s| s.id.clone()).collect();
     let _: Vec<Stop> = db.insert("stop").content(stops_data).await?;
 
     println!("Reading Trips");
     let mut reader = ReaderBuilder::new().has_headers(true).from_path(format!("{}/trips.txt", path)).unwrap();
-    let trips: Vec<Trip> = reader.records().par_bridge().filter_map(|l| l.ok().map(Trip::new)).filter(|t| known_rail_routes.contains(&t.route_id)).collect();
-    let known_rail_trips: HashSet<RecordId> = trips.iter().par_bridge().map(|t| t.id.clone()).collect();
+    let trips: Vec<Trip> = reader.records().filter_map(|l| l.ok().map(Trip::new)).filter(|t| known_rail_routes.contains(&t.route_id)).collect();
+    let known_rail_trips: HashSet<RecordId> = trips.iter().map(|t| t.id.clone()).collect();
     let trips: Vec<Trip> = db.insert("trip").content(trips).await?;
 
     println!("Reading Transfers");
     let mut reader = ReaderBuilder::new().has_headers(true).from_path(format!("{}/transfers.txt", path)).unwrap();
-    let transfers: HashSet<(RecordId, RecordId)> = reader.records().par_bridge().filter_map(|l| l.ok().map(parse_transfer_line).flatten()).collect();
+    let transfers: HashSet<(RecordId, RecordId)> = reader.records().filter_map(|l| l.ok().map(parse_transfer_line).flatten()).collect();
     let transfer_map: HashMap<RecordId, Vec<RecordId>> = {
         let mut map = HashMap::new();
         for (from, to) in transfers {
@@ -60,7 +59,7 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
         }
         map
     };
-    let transfer_records: Vec<Transfer> = stops.into_iter().par_bridge().filter_map(|stop_id| {
+    let transfer_records: Vec<Transfer> = stops.into_iter().filter_map(|stop_id| {
         transfer_map.get(&stop_id).map(|to_stops| Transfer {
             from_stop: stop_id.clone(),
             to_stops: to_stops.clone(),
@@ -71,7 +70,6 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
     println!("Reading StopTimes");
     let mut reader = ReaderBuilder::new().has_headers(true).from_path(format!("{}/stop_times.txt", path)).unwrap();
     let stop_times: Vec<StopTime> = reader.records()
-        .par_bridge()
         .filter_map(|l| l.ok())
         .filter(|line| {
             let id = RecordId::from(("trip", &line[0]));
