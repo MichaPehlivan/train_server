@@ -3817,6 +3817,7 @@ dependencies = [
  "chrono",
  "csv",
  "futures",
+ "rayon",
  "serde",
  "surrealdb",
  "tokio",
