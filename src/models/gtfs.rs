@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use surrealdb::RecordId;
 
@@ -18,12 +19,11 @@ pub struct CalendarDate {
 }
 
 impl CalendarDate {
-    pub fn new(source: String) -> CalendarDate {
-        let parts: Vec<&str> = source.split(",").collect();
+    pub fn new(source: StringRecord) -> CalendarDate {
         CalendarDate { 
-            service_id: parts[0].to_string(), 
-            date: NaiveDate::parse_from_str(parts[1], "%Y%m%d").unwrap(), 
-            excpetion_type: match parts[2] {
+            service_id: source[0].to_string(), 
+            date: NaiveDate::parse_from_str(&source[1], "%Y%m%d").unwrap(), 
+            excpetion_type: match &source[2] {
                 "1" => ExceptionType::ADDED,
                 "2" => ExceptionType::REMOVED,
                 _=> panic!("Invalid excpetion_type!")
@@ -56,30 +56,13 @@ pub struct Route {
 }
 
 impl Route {
-    pub fn new(source: String) -> Route {
-        let mut parts = Vec::new();
-        let mut start = 0;
-        let mut in_quotes = false;
-
-        for (i, c) in source.char_indices() {
-            match c {
-                '"' => in_quotes = !in_quotes,
-                ',' if !in_quotes => {
-                    parts.push(source[start..i].trim());
-                    start = i + 1;
-                }
-                _ => {}
-            }
-        }
-
-        parts.push(source[start..].trim());
-
+    pub fn new(source: StringRecord) -> Route {
         Route { 
-            id: RecordId::from(("route", parts[0])), 
-            agency_id: parts[1].to_string(), 
-            route_short_name: parts[2].to_string(), 
-            route_long_name: parts[3].to_string(), 
-            route_type: match parts[5] {
+            id: RecordId::from(("route", &source[0])), 
+            agency_id: source[1].to_string(), 
+            route_short_name: source[2].to_string(), 
+            route_long_name: source[3].to_string(), 
+            route_type: match &source[5] {
                 "0" => RouteType::TRAM,
                 "1" => RouteType::METRO,
                 "2" => RouteType::RAIL,
@@ -106,14 +89,13 @@ pub struct StopTime {
 }
 
 impl StopTime {
-    pub fn new(source: &str) -> StopTime {
-        let parts: Vec<&str> = source.split(",").collect();
+    pub fn new(source: StringRecord) -> StopTime {
         StopTime { 
-            trip_id: RecordId::from(("trip", parts[0])), 
-            stop_sequence: usize::from_str_radix(parts[1], 10).unwrap(), 
-            stop_id: RecordId::from(("stop", parts[2])), 
-            arrival_time: CSTime::parse_from_str(parts[4]), 
-            departure_time: CSTime::parse_from_str(parts[5]) 
+            trip_id: RecordId::from(("trip", &source[0])), 
+            stop_sequence: usize::from_str_radix(&source[1], 10).unwrap(), 
+            stop_id: RecordId::from(("stop", &source[2])), 
+            arrival_time: CSTime::parse_from_str(&source[4]), 
+            departure_time: CSTime::parse_from_str(&source[5]) 
         }
     }
 }
@@ -137,28 +119,11 @@ pub struct Stop {
 }
 
 impl Stop {
-    pub fn new(source: String) -> Stop {
-        let mut parts = Vec::new();
-        let mut start = 0;
-        let mut in_quotes = false;
-
-        for (i, c) in source.char_indices() {
-            match c {
-                '"' => in_quotes = !in_quotes,
-                ',' if !in_quotes => {
-                    parts.push(source[start..i].trim());
-                    start = i + 1;
-                }
-                _ => {}
-            }
-        }
-
-        parts.push(source[start..].trim());
-
+    pub fn new(source: StringRecord) -> Stop {
         Stop { 
-            id: RecordId::from(("stop", parts[0])), 
-            stop_name: parts[2].to_string(), 
-            location_type: match parts[5] {
+            id: RecordId::from(("stop", &source[0])), 
+            stop_name: source[2].to_string(), 
+            location_type: match &source[5] {
                 "0" => LocationType::STOP,
                 "1" => LocationType::STATION,
                 "2" => LocationType::ENTRANCE,
@@ -166,8 +131,8 @@ impl Stop {
                 "4" => LocationType::BOARDINGAREA,
                 _=> panic!("Invalid location_type!")
             }, 
-            parent_station: parts[6].to_string(),
-            platform_code: parts[9].to_string() 
+            parent_station: source[6].to_string(),
+            platform_code: source[9].to_string() 
         }
     }
 }
@@ -199,15 +164,14 @@ pub struct Trip {
 }
 
 impl Trip {
-    pub fn new(source: String) -> Trip {
-        let parts: Vec<&str> = source.split(",").collect();
+    pub fn new(source: StringRecord) -> Trip {
         Trip { 
-            id: RecordId::from(("trip", parts[2])), 
-            route_id: RecordId::from(("route", parts[0])), 
-            service_id: parts[1].to_string(), 
-            trip_headsign: parts[4].to_string(), 
-            trip_short_name: parts[5].to_string(), 
-            trip_long_name: parts[6].to_string() 
+            id: RecordId::from(("trip", &source[2])), 
+            route_id: RecordId::from(("route", &source[0])), 
+            service_id: source[1].to_string(), 
+            trip_headsign: source[4].to_string(), 
+            trip_short_name: source[5].to_string(), 
+            trip_long_name: source[6].to_string() 
         }
     }
 }
