@@ -6,6 +6,8 @@ use surrealdb::{engine::remote::ws::Client, Error, RecordId, Surreal};
 
 use crate::models::{gtfs::{CalendarDate, Route, RouteType, Stop, StopTime, Transfer, TransferType, Trip}, Connection};
 
+const CHUNK_SIZE: usize = 1000;
+
 fn parse_transfer_line(line: StringRecord) -> Option<(RecordId, RecordId)> {
     let transfer_type = match &line[6] {
         "0" => TransferType::RECOMMENDED,
@@ -77,8 +79,10 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
         })
         .map(|line| StopTime::new(line))
         .collect();
-    stream::iter(stop_times.clone()).for_each_concurrent(16, |stop_time| async {
-        let _: Result<Option<StopTime>, _> = db.create("stop_time").content(stop_time).await;
+    let stop_time_chunks: Vec<_> = stop_times.chunks(CHUNK_SIZE).map(|c| c.to_vec()).collect();
+
+    stream::iter(stop_time_chunks).for_each_concurrent(16, |chunk| async move {
+        let _: Result<Option<Vec<StopTime>>, _> = db.create("stop_time").content(chunk).await;
     }).await;
 
 
