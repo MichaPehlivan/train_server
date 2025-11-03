@@ -1,11 +1,14 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
+use futures::{StreamExt, stream};
 use serde::{Deserialize, Serialize};
 use surrealdb::{engine::remote::ws::Client, Error, RecordId, Surreal};
 
 use crate::models::gtfs::{StopTime, Trip};
 
 pub mod gtfs;
+
+const CHUNK_SIZE: usize = 1000;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CSTime {
@@ -43,23 +46,40 @@ pub struct Connection {
 
 impl Connection {
     pub async fn build_connections(db: &Surreal<Client>, trips: Vec<Trip>, stop_times: Vec<StopTime>) -> Result<(), Error> {
+        
+        let mut stop_times_by_trip: HashMap<RecordId, Vec<&StopTime>> = HashMap::new();
+        for stop_time in &stop_times {
+            stop_times_by_trip.entry(stop_time.trip_id.clone())
+                .or_default()
+                .push(stop_time);
+        }
+        for times in stop_times_by_trip.values_mut() {
+            times.sort_by_key(|stop| stop.stop_sequence);
+        }
+
+        let mut connections = vec![];
+
         for (index, trip) in trips.iter().enumerate() {
-            let mut times: Vec<&StopTime> = stop_times.iter().filter(|x| x.trip_id == trip.id).collect();
-            times.sort_by(|a, b| a.stop_sequence.cmp(&b.stop_sequence));
-            
-            for pair in times.windows(2) {
-                let trip: Trip = db.select(pair[0].trip_id.clone()).await?.unwrap();
-                let _: Vec<Connection> = db.insert("connection").content(Connection {
+            if let Some(times) = stop_times_by_trip.get(&trip.id) {
+                for pair in times.windows(2) {
+                    connections.push(Connection {
                         dep_stop: pair[0].stop_id.clone(),
                         arr_stop: pair[1].stop_id.clone(),
                         dep_time: pair[0].departure_time.clone(),
                         arr_time: pair[1].arrival_time.clone(),
-                        trip: trip.id,
-                        service: trip.service_id
-                    }).await?;
+                        trip: trip.id.clone(),
+                        service: trip.service_id.clone()
+                    });
+                }
+                print!("Build Connections for {}% of Trips\r", (index*100)/trips.len());
             }
-            print!("Build Connections for {}% of Trips\r", (index*100)/trips.len());
         }
+
+        let connection_chunks: Vec<_> = connections.chunks(CHUNK_SIZE).map(|c| c.to_vec()).collect();
+        stream::iter(connection_chunks).for_each_concurrent(16, |chunk| async move {
+            let _: Result<Vec<Connection>, _> = db.insert("connection").content(chunk).await;
+        }).await;
+
         println!("Build Connections for 100% of Trips");
 
         Ok(())

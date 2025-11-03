@@ -82,9 +82,8 @@ pub async fn read_gtfs(path: &str, db: &Surreal<Client>) -> Result<(), Error> {
     let stop_time_chunks: Vec<_> = stop_times.chunks(CHUNK_SIZE).map(|c| c.to_vec()).collect();
 
     stream::iter(stop_time_chunks).for_each_concurrent(16, |chunk| async move {
-        let _: Result<Option<Vec<StopTime>>, _> = db.create("stop_time").content(chunk).await;
+        let _: Result<Vec<StopTime>, _> = db.insert("stop_time").content(chunk).await;
     }).await;
-
 
     println!("Building Connections");
     Connection::build_connections(db, trips, stop_times).await?;
